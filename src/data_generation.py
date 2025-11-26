@@ -19,7 +19,7 @@ def generate_weak_features(n_samples: int, m_features: int) -> Tuple[np.ndarray,
     # Gerar y ~ N(0, 1)
     y = np.random.randn(n_samples, 1)
     
-    # Scalling eta = 1 / sqrt(m)
+    # Scalling eta = m
     eta = m_features
 
     # Média das features = y / sqrt(m)
