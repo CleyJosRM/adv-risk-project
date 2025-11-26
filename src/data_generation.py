@@ -22,7 +22,7 @@ def generate_weak_features(n_samples: int, m_features: int) -> Tuple[np.ndarray,
     # Scalling eta = m
     eta = m_features
 
-    # Média das features = y / sqrt(m)
+    # Média das features = y / m
     # Vetorizar a média para criar a matriz (n, m)
     medias = np.tile(y / eta, (1, m_features))
     
