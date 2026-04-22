@@ -1,38 +1,31 @@
 import numpy as np
-from typing import Tuple
+from sklearn.metrics import mean_squared_error
 
-def calculate_risks_linf(X_test: np.ndarray, 
-                         y_test: np.ndarray, 
-                         beta_hat: np.ndarray, 
-                         delta: float) -> Tuple[float, float]:
-    """
-    Calcula o Risco Padrão e o Risco Adversário l_infinito.
-    Baseado no Lemma 1 do paper.
+def get_min_norm_weights(X, y):
+    """Returns the minimum-norm least squares solution."""
+    return np.linalg.pinv(X) @ y
+
+def get_optimal_solution(m_features: int) -> np.ndarray:
+    """Returns the optimal solution for the weak features example."""
+    # O vetor de pesos otimos é dado por beta = (1/sqrt(m), ..., 1/sqrt(m))
+    beta_value = np.sqrt(1/m_features)
+    beta_hat = np.full((m_features, 1), beta_value)
+
+    return beta_hat
+
+def calculate_risks(w, X_test, y_test, epsilon, p):
+    """Calculates both standard MSE and Adversarial Risk bounded by epsilon."""
+    mse = mean_squared_error(y_test, X_test @ w)
     
-    Args:
-        X_test (np.ndarray): Dados de teste.
-        y_test (np.ndarray): Alvo de teste.
-        beta_hat (np.ndarray): Pesos do modelo treinado.
-        delta (float): Orçamento do ataque adversário.
+    # Dual norm calculation
+    if p == np.inf:
+        dual_norm_w = np.linalg.norm(w, ord=1)
+    elif p == 1:
+        dual_norm_w = np.linalg.norm(w, ord=np.inf)
+    else:
+        q = p/(p - 1)
+        dual_norm_w = np.linalg.norm(w, q)
         
-    Returns:
-        risk_std (float): Risco Padrão.
-        risk_adv (float): Risco Adversário l_infinito estimado.
-    """
-    # Calcular o erro original (e0) nos dados de teste
-    y_pred = X_test @ beta_hat
-    e0 = y_test - y_pred
-    
-    # Risco Padrão: Média do erro ao quadrado
-    risk_std = np.mean(e0**2)
-    
-    # Para ataque l_inf (p=inf), usamos norma l1 (q=1), para satisfazer a condição 1/p + 1/q = 1 do Lemma
-    # Calculamos a norma l1 do vetor de pesos
-    norm_l1 = np.linalg.norm(beta_hat, 1)
-    
-    # Risco Adversário: Fórmula Simplificada do Lemma 1
-    # R_adv = Mean( (|e0| + delta * ||beta||_1)^2 )
-    adv_loss = (np.abs(e0) + delta * norm_l1)**2
-    risk_adv = np.mean(adv_loss)
-    
-    return risk_std, risk_adv
+    adv_risk = mse + (epsilon * dual_norm_w)**2
+    return mse, adv_risk
+
